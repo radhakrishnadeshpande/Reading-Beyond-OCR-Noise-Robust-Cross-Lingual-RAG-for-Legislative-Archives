@@ -1,332 +1,144 @@
 # Reading Beyond OCR Noise: Robust Cross-Lingual RAG for Legislative Archives
 
-A research implementation for cross-lingual Retrieval-Augmented Generation (RAG) over historical legislative archives, with a focus on OCR noise, multilingual queries, document retrieval, and evidence-grounded answer generation.
+**Radha Krishna Deshpande, Ajoy Mondal, Akash Manna, C V Jawahar**
+CVIT, International Institute of Information Technology, Hyderabad, India
 
-**Paper:** *Reading Beyond OCR Noise: Robust Cross-Lingual RAG for Legislative Archives*  
-**Venue:** CVIP 2026  
-**Repository:** [GitHub](https://github.com/radhakrishnadeshpande/Reading-Beyond-OCR-Noise-Robust-Cross-Lingual-RAG-for-Legislative-Archives)
+[Paper (PDF)](REPLACE_WITH_PAPER_LINK) · [Project page](REPLACE_WITH_PROJECT_PAGE_LINK) · [Code](https://github.com/radhakrishnadeshpande/Reading-Beyond-OCR-Noise-Robust-Cross-Lingual-RAG-for-Legislative-Archives#motivation)
 
 ---
-
-## Table of Contents
-
-- [Overview](#overview)
-- [Motivation](#motivation)
-- [Key Features](#key-features)
-- [System Pipeline](#system-pipeline)
-- [Research and Evaluation](#research-and-evaluation)
-- [Repository Structure](#repository-structure)
-- [Getting Started](#getting-started)
-- [Configuration](#configuration)
-- [Running the Code](#running-the-code)
-- [Evaluation Metrics](#evaluation-metrics)
-- [Dataset and Data Preparation](#dataset-and-data-preparation)
-- [Reproducibility](#reproducibility)
-- [Limitations](#limitations)
-- [Citation](#citation)
-- [Acknowledgements](#acknowledgements)
 
 ## Overview
 
-Historical legislative archives contain valuable information about government decisions, parliamentary proceedings, public expenditure, administrative policies, and legislative activities. However, extracting this information reliably is challenging because archival documents frequently contain degraded scans, complex layouts, tables, inconsistent typography, and OCR errors.
+Decades of Indian parliamentary records survive only as degraded, multi-column scans in Hindi (Devanagari), Punjabi (Gurmukhi) and English. On such pages, OCR and layout errors are the main obstacle to finding information.
 
-This project investigates a cross-lingual RAG pipeline designed to retrieve relevant evidence from legislative archives and generate answers to questions expressed in different languages.
+This project couples **layout-aware multi-script OCR** with an **agentic retrieval-augmented generation (RAG) loop**. The agent checks whether the retrieved evidence is sufficient, rewrites the query if it is not, and searches again before generating a grounded answer in the user's own language.
 
-The research focuses on the **Punjab Vidhan Sabha archives**, including historical documents containing Punjabi text in Gurmukhi script and English content. It explores how OCR quality, multilingual semantic retrieval, iterative query refinement, and evidence-grounded generation affect the reliability of question answering over archival documents.
+We evaluate on the **Punjab Vidhan Sabha (PVS) archive**: about 200,000 pages spanning 1950–2024.
 
-The central objective is to make historical legislative information more accessible without losing important details during OCR, retrieval, or answer generation.
+![Pipeline overview](ws/adapt_dr/Reading-Beyond-OCR-Noise-Robust-Cross-Lingual-RAG-for-Legislative-Archives/agentic_rag.png)
 
-## Motivation
+## Highlights
 
-Conventional RAG systems can struggle with historical documents for several reasons:
+- **Native-language querying.** Queries are embedded directly in Hindi, Punjabi or English. No machine-translation step.
+- **Agentic loop.** Retrieve → evaluate context sufficiency (LLM) → rewrite query → retrieve again, up to `L` iterations.
+- **Fully open-weight and local.** The whole pipeline runs on a single RTX 4060 (16 GB), and every answer traces back to a source page.
+- **Hybrid retrieval** with BAAI/bge-m3 embeddings stored in ChromaDB.
 
-- **OCR noise:** Incorrectly recognized characters and words can distort important names, dates, figures, and administrative terminology.
-- **Cross-lingual queries:** The language of a user's question may differ from the language or script of the retrieved document.
-- **Complex document layouts:** Tables, columns, and mixed narrative content can make it difficult to preserve relationships between extracted values.
-- **Historical terminology:** Older administrative language, spelling variations, and historical currency conventions can complicate semantic matching.
-- **Evidence consistency:** A fluent generated answer is not necessarily supported by the correct archival source.
+## Pipeline
 
-This project studies these challenges in the context of legislative information retrieval and question answering.
+1. **Offline.** Layout segmentation (fine-tuned YOLO) → OCR (CRNN-based recognizer) → chunking → multilingual embeddings with metadata → vector DB.
+2. **Online.** The query `q` is embedded as `v_q = E(q)`. The top-k chunks are retrieved by cosine similarity.
+3. **Agent loop.** An evaluation LLM checks whether the context is sufficient. If not, a rewriting LLM produces a new query `q'` that keeps the intent of `q` and rephrases terms likely to be lost to OCR errors.
+4. **Generation.** An LLM answers in the user's language, conditioned on the query and the validated context.
 
-## Key Features
+## Results
 
-- **Cross-lingual retrieval:** Explore retrieval across language boundaries, including Punjabi queries and English archival content.
-- **OCR-aware processing:** Investigate how OCR quality affects downstream retrieval and answer generation.
-- **Evidence-grounded question answering:** Generate answers using information retrieved from relevant archival documents.
-- **Iterative retrieval and query refinement:** Evaluate an agentic retrieval loop that can refine a query over multiple iterations.
-- **Multiple OCR systems:** Compare OCR outputs and their downstream impact using the systems evaluated in the research.
-- **Quantitative evaluation:** Assess retrieval effectiveness and OCR quality using defined metrics.
-- **Historical document analysis:** Address archival material containing tables, administrative records, dates, names, and numerical values.
+### Retrieval on the PVS benchmark (1,000 pages / 200 queries, indexed against the full archive)
 
-## System Pipeline
+| Model / pipeline | MRR@1 | Hit@3 | Hit@5 | Prec@3 |
+|---|---|---|---|---|
+| MuRIL | 0.000 | 0.005 | 0.015 | 0.002 |
+| LaBSE | 0.320 | 0.510 | 0.590 | 0.170 |
+| Embedding-gemma (300M) | 0.525 | 0.735 | 0.775 | 0.245 |
+| NetraEmbed (dim=768) | 0.580 | 0.816 | 0.890 | 0.272 |
+| NetraEmbed (dim=1536) | 0.598 | 0.835 | 0.905 | 0.278 |
+| NetraEmbed (dim=2560) | 0.605 | 0.843 | 0.912 | 0.281 |
+| Multilingual-E5-Large | 0.620 | 0.855 | 0.915 | 0.285 |
+| Standard BGE-M3 | 0.775 | 0.900 | 0.940 | 0.300 |
+| **Ours (optimized pipeline)** | **0.810** | **0.925** | **0.955** | **0.325** |
 
-The research workflow can be summarized as follows:
+### OCR and layout (20 hand-transcribed pages)
 
-```text
-Historical Legislative Documents
-              |
-              v
-     Document Images / Scans
-              |
-              v
-       OCR and Text Extraction
-              |
-              v
-   Text Processing and Indexing
-              |
-              v
-       User Query (Multilingual)
-              |
-              v
- Cross-Lingual Retrieval and Ranking
-              |
-              v
- Iterative Retrieval / Query Refinement
-              |
-              v
-      Evidence-Grounded Generation
-              |
-              v
-       Answer with Source Evidence
-              |
-              v
-       Retrieval and OCR Evaluation
-```
+| Layout model | OCR model | CRR (%) | WRR (%) |
+|---|---|---|---|
+| Gemini-3.1 | Gemini-3.1 | 99.7 | 89.6 |
+| Surya2 | Surya2 | 99.6 | 88.9 |
+| Sarvam | Sarvam | 99.5 | 89.4 |
+| YOLO (fine-tuned) | CRNN (ours) | 95.67 | 80.03 |
+| CRAFT | CRNN (ours) | 89.00 | 60.35 |
 
-The exact execution order and implementation details depend on the individual Python modules and their configurations.
+A better layout model alone lifts WRR from 60.35% to 80.03% with the same recognizer. Our pipeline trails the commercial and large-model OCR systems on recognition, but stays fully local.
 
-## Research and Evaluation
+### Effect of OCR choice on retrieval
 
-### 1. OCR quality
+| OCR model | MRR@1 | Hit@3 | Hit@5 | Prec@3 |
+|---|---|---|---|---|
+| Gemini-3.1 | 0.825 | 0.920 | 0.960 | 0.3533 |
+| Sarvam | 0.820 | 0.935 | 0.955 | 0.325 |
+| Surya2 | 0.815 | 0.925 | 0.950 | 0.305 |
+| Ours | 0.810 | 0.925 | 0.955 | 0.325 |
 
-OCR systems are evaluated on archival document text to investigate recognition errors and their potential effect on downstream retrieval.
+### Agent-loop ablation (`L` = 1 → 3)
 
-The research includes comparisons involving the OCR systems used in the experiments, including Gemini, Sarvam, Surya2, and Ourocr.
+Increasing the maximum number of retrieval–rewrite iterations from 1 to 3 raises MRR@1 from about 0.89 to 0.97 and Precision@3 from about 0.33 to 0.37. Answer F1 rises from about 0.18 to 0.35, a nearly 2× relative gain. The loop mostly recovers answer-relevant context that single-pass retrieval misses entirely.
 
-### 2. Cross-lingual retrieval
+## Dataset
 
-The retrieval component is evaluated on questions that require matching a query with relevant information in legislative documents, including scenarios where the query and source content use different languages.
+| | |
+|---|---|
+| Source | Punjab Vidhan Sabha, [pvs.neva.gov.in](https://pvs.neva.gov.in/) |
+| Size | ~200,000 pages, 1950–2024 |
+| Scripts | Hindi (Devanagari), Punjabi (Gurmukhi), English, often mixed on one page |
+| Content | Proceedings, debates, starred and unstarred questions, budgets, committee reports, notices |
+| Evaluation set | 1,000 pages and 200 gold question–answer pairs, stratified by decade, script and document type |
+| OCR ground truth | 20 hand-transcribed pages across degradation levels |
 
-### 3. Agentic retrieval
+## Quick start
 
-An iterative retrieval-and-rewriting strategy is investigated to examine whether refining a query over multiple retrieval steps can improve evidence selection and answer quality.
-
-### 4. Answer generation
-
-Generated answers are assessed against reference information to study whether the system can preserve the factual details contained in the retrieved evidence.
-
-### Evaluation results
-
-The repository accompanies the research paper, which documents the experimental setup, evaluation methodology, and reported results.
-
-Refer to the paper and the corresponding experiment scripts for the precise dataset splits, model configurations, evaluation settings, and numerical results. Results should be interpreted within the scope of the evaluated dataset and experimental conditions.
-
-## Repository Structure
-
-The repository contains Python source code for the research implementation. The exact file organization may evolve as the code is updated.
-
-A suggested organization for maintaining the project is:
-
-```text
-Reading-Beyond-OCR-Noise-Robust-Cross-Lingual-RAG-for-Legislative-Archives/
-│
-├── README.md
-├── requirements.txt                 # If provided
-├── .gitignore
-│
-├── data/                             # Local data; not committed by default
-├── preprocessing/                    # Document/OCR processing, if separated
-├── retrieval/                        # Retrieval components, if separated
-├── generation/                       # Answer generation, if separated
-├── evaluation/                       # Evaluation scripts, if separated
-└── *.py                              # Research implementation scripts
-```
-
-This is an illustrative organizational layout, not a claim that all these directories already exist. Consult the actual Python files to identify the implemented modules and entry points.
-
-## Getting Started
-
-### Prerequisites
-
-Before running the implementation, ensure that you have:
-
-- Python compatible with the project's dependencies.
-- Git.
-- Access to the required archival data or preprocessed documents.
-- The model checkpoints and services required by the selected pipeline components.
-- API credentials for any external model services used by your chosen configuration.
-
-GPU availability depends on the models and processing stages you intend to run.
-
-### 1. Clone the repository
+> Replace these commands with the ones in your repository.
 
 ```bash
-git clone https://github.com/radhakrishnadeshpande/Reading-Beyond-OCR-Noise-Robust-Cross-Lingual-RAG-for-Legislative-Archives.git
-
-cd Reading-Beyond-OCR-Noise-Robust-Cross-Lingual-RAG-for-Legislative-Archives
-```
-
-### 2. Create a Python environment
-
-Using Conda:
-
-```bash
-conda create -n legislative-rag python=3.10 -y
-conda activate legislative-rag
-```
-
-Alternatively, use Python's built-in virtual environment support:
-
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-```
-
-Choose a Python version compatible with the dependencies used by the actual implementation.
-
-### 3. Install dependencies
-
-If the repository provides a `requirements.txt` file:
-
-```bash
-python -m pip install --upgrade pip
+git clone https://github.com/YOUR-ORG/YOUR-REPO.git
+cd YOUR-REPO
 pip install -r requirements.txt
+
+# 1. Layout + OCR
+python scripts/run_ocr.py --input data/pages --output data/text
+
+# 2. Build the index (BAAI/bge-m3 + ChromaDB)
+python scripts/build_index.py --text data/text --db chroma_db
+
+# 3. Ask a question (Hindi / Punjabi / English)
+python scripts/ask.py --db chroma_db --max_loops 3 --query "<your question>"
 ```
 
-If no dependency file is provided, install the packages required by the specific scripts you intend to run. The required packages may differ depending on the OCR provider, embedding model, vector store, and language model used.
+## Repository structure
 
-### 4. Prepare the data
+> Adjust to match your repository.
 
-Obtain the authorized document images, OCR outputs, or processed text required by the experiment. Configure the relevant paths in the implementation.
-
-Large datasets, proprietary documents, model weights, and generated indexes may need to be downloaded separately. They are not necessarily included in this GitHub repository.
-
-## Configuration
-
-Before execution, check the relevant Python scripts for:
-
-- Input document or image directories.
-- OCR provider and model selection.
-- OCR language and modality settings.
-- Embedding model configuration.
-- Vector database or index paths.
-- Language model and generation settings.
-- Retrieval top-k and ranking parameters.
-- Maximum retrieval-refinement iterations.
-- Evaluation dataset and output directories.
-
-Use environment variables or a local configuration file where supported.
-
-**Security:** Never commit API keys, access tokens, passwords, private document collections, or other confidential information. Store credentials in environment variables or an appropriate secret manager.
-
-## Running the Code
-
-The Python files in this repository may support different stages of the research workflow, such as OCR processing, indexing, retrieval, generation, and evaluation.
-
-To identify the available scripts:
-
-```bash
-find . -type f -name "*.py" -not -path "./.git/*"
 ```
-
-To inspect a script's command-line arguments, where supported:
-
-```bash
-python path/to/script.py --help
+.
+├── assets/          # figures used in this README and the project page
+├── scripts/         # OCR, indexing, query entry points
+├── src/             # layout, OCR, retrieval, agent loop
+├── eval/            # MRR / Hit@k / F1 / CRR / WRR evaluation
+└── index.html       # project page (GitHub Pages)
 ```
-
-Replace `path/to/script.py` with the actual script path.
-
-Run the appropriate entry point only after checking its required inputs, configuration, and dependencies. Some scripts may be intended as experiment-specific utilities rather than standalone applications.
-
-## Evaluation Metrics
-
-The research evaluates retrieval effectiveness and OCR quality.
-
-### Retrieval metrics
-
-- **MRR@1 (Mean Reciprocal Rank at 1):** Measures whether the first retrieved result is relevant under the benchmark's relevance definition.
-- **Hit@k:** Measures whether at least one relevant document appears in the top-k retrieved results.
-- **Precision@3:** Measures the fraction of the top three retrieved documents that are relevant, averaged according to the evaluation protocol.
-
-### OCR quality metrics
-
-OCR evaluation examines the quality of recognized text and its potential downstream effects. The precise metrics, normalization rules, reference text, and scoring procedures should be taken from the evaluation scripts and research paper.
-
-### Reproducing the evaluation
-
-For meaningful comparisons:
-
-1. Use the same evaluation dataset and query set.
-2. Keep preprocessing and text normalization consistent.
-3. Use the same retrieval settings and ranking configuration.
-4. Record the OCR and language model versions.
-5. Report the metrics using the same definitions as the paper.
-6. Record the configuration and random seeds wherever applicable.
-
-Do not compare results across different evaluation conditions without documenting the differences.
-
-## Dataset and Data Preparation
-
-The research focuses on historical Punjab Vidhan Sabha documents.
-
-Depending on the experiment, inputs may include:
-
-- Scanned legislative pages.
-- OCR-generated text.
-- Processed or indexed document representations.
-- Evaluation queries and relevance annotations.
-- Reference answers used for evaluation.
-
-The dataset, annotations, and preprocessing outputs should be handled according to their applicable access and usage permissions.
-
-If the underlying archival documents or benchmark annotations are not publicly distributed, users must obtain access independently. The availability of this source code does not imply that the complete dataset or external model services are included.
-
-## Reproducibility
-
-To make experimental results easier to reproduce, record:
-
-- OCR model and version.
-- Embedding model and version.
-- Generation model and version.
-- Dataset version and preprocessing procedure.
-- Retrieval and reranking parameters.
-- Maximum number of iterative retrieval steps.
-- Evaluation script and metric definitions.
-- Hardware, software dependencies, and relevant configuration.
-
-Exact numerical reproduction may depend on model versions, external services, computational resources, and dataset availability.
 
 ## Limitations
 
-This research addresses important challenges in OCR-based cross-lingual retrieval, but several limitations remain:
-
-- Recognition errors may still affect retrieval and numerical accuracy.
-- Complex tables and historical layouts can be difficult to interpret reliably.
-- Retrieval quality depends on document coverage, indexing, and query formulation.
-- Generated answers require verification against the original archival sources.
-- Performance on the evaluated corpus may not generalize to every language, archive, or document type.
-
-For historical, legal, or administrative research, users should verify important claims and numerical values against the cited source documents.
+- Severe OCR errors on degraded pages can still hurt dense retrieval and entity matching.
+- The agent loop and LLM-based sufficiency checks add inference latency over standard retrieval.
+- Complex financial and unstructured tables can lose hierarchical structure when converted to text chunks.
 
 ## Citation
 
-If you use this implementation in academic work, please cite the associated paper.
+```bibtex
+@inproceedings{deshpande2026reading,
+  title     = {Reading Beyond {OCR} Noise: Robust Cross-Lingual {RAG} for Legislative Archives},
+  author    = {Deshpande, Radha Krishna and Mondal, Ajoy and Manna, Akash and Jawahar, C V},
+  booktitle = {REPLACE_WITH_VENUE},
+  year      = {2026}
+}
+```
 
-**Paper title:** *Reading Beyond OCR Noise: Robust Cross-Lingual RAG for Legislative Archives*  
-**Venue:** CVIP 2026
+## Acknowledgment
 
-Add the final bibliographic citation here once the official proceedings metadata, author list, and publication details are available.
+This work is supported by MeitY, Government of India, through the NLTM-Bhashini project.
 
-## Acknowledgements
+## Contact
 
-This project investigates the intersection of OCR, multilingual information retrieval, and generative question answering for historical legislative archives. It aims to support research into more accessible and reliable retrieval of information from archival government documents.
-
-## License
-
-Specify the repository's applicable license here. If no license has been added, users should not assume that the source code is licensed for unrestricted reuse or redistribution.
-
----
-
-For questions about the implementation, experimental setup, or research methodology, please open an issue in this repository with the relevant script, configuration, and error details.
-# Reading-Beyond-OCR-Noise-Robust-Cross-Lingual-RAG-for-Legislative-Archives
+Radha Krishna Deshpande · radhakrishna.d@research.iiit.ac.in
+Akash Manna · akash.manna@research.iiit.ac.in
+Ajoy Mondal · ajoy.mondal@iiit.ac.in
+C V Jawahar · jawahar@iiit.ac.in
