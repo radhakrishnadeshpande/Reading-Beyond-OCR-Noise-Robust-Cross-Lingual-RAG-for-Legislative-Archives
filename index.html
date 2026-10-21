@@ -3,79 +3,119 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light">
 <title>Reading Beyond OCR Noise: Robust Cross-Lingual RAG for Legislative Archives</title>
 <meta name="description" content="Agentic RAG with layout-aware OCR for the 200,000-page Punjab Vidhan Sabha archive in Hindi, Punjabi and English.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,400;7..72,600;7..72,700&family=Public+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Source+Sans+3:wght@400;500;600&family=Noto+Sans+Gurmukhi:wght@500;600&family=Noto+Sans+Devanagari:wght@500;600&display=swap">
 <style>
-:root{--bg:#edf0f3;--surface:#fff;--ink:#0f1b2d;--muted:#566275;--line:#cfd6df;--accent:#1d4ed8;--accent-ink:#fff;--mark:#b45309;--bar:#c5d0e6;
---serif:"Literata",Georgia,"Times New Roman",serif;--sans:"Public Sans",system-ui,-apple-system,"Segoe UI",Arial,sans-serif;
+:root{color-scheme:light;
+--bg:#ffffff;--soft:#f3f6fc;--ink:#14213d;--muted:#51607a;--line:#dde4f0;
+--brand:#2347d9;--brand-dark:#1a35a8;--tint:#e8edfc;--gold:#f2a516;
+--head:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
+--body:"Source Sans 3","Segoe UI",system-ui,-apple-system,Arial,sans-serif;
 box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e141c;--surface:#16202c;--ink:#e6ebf2;--muted:#9aa7b8;--line:#2b394a;--accent:#7ca2ff;--accent-ink:#0e141c;--mark:#f0a04b;--bar:#2c3d57;color-scheme:dark}}
-:root[data-theme="dark"]{--bg:#0e141c;--surface:#16202c;--ink:#e6ebf2;--muted:#9aa7b8;--line:#2b394a;--accent:#7ca2ff;--accent-ink:#0e141c;--mark:#f0a04b;--bar:#2c3d57;color-scheme:dark}
-html{scroll-padding-top:env(safe-area-inset-top,0px)}
+html{scroll-behavior:smooth;scroll-padding-top:env(safe-area-inset-top,0px)}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:400 17px/1.65 var(--sans)}
-a{color:var(--accent)}
-:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
-.wrap{max-width:900px;margin:0 auto;padding:0 22px}
-header.hero{padding:64px 0 40px;border-bottom:1px solid var(--line)}
-h1{font:700 clamp(2rem,5.2vw,3.4rem)/1.12 var(--serif);margin:0 0 22px;letter-spacing:-.01em;max-width:20ch}
-.authors{font-size:1.02rem;margin:0 0 4px}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 18px/1.7 var(--body);-webkit-font-smoothing:antialiased}
+a{color:var(--brand)}
+:focus-visible{outline:3px solid var(--gold);outline-offset:3px;border-radius:4px}
+.wrap{max-width:1080px;margin:0 auto;padding:0 24px}
+
+/* top bar */
+.bar{border-bottom:1px solid var(--line);background:var(--bg)}
+.bar .wrap{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:60px;flex-wrap:wrap}
+.bar b{font:700 1rem var(--head);letter-spacing:-.01em}
+.bar nav{display:flex;gap:22px;flex-wrap:wrap}
+.bar nav a{color:var(--muted);text-decoration:none;font-weight:500;font-size:.95rem}
+.bar nav a:hover{color:var(--brand)}
+
+/* hero */
+.hero{background:linear-gradient(180deg,var(--soft) 0%,var(--bg) 100%);padding:72px 0 56px}
+h1{font:800 clamp(2.2rem,5.6vw,4rem)/1.06 var(--head);letter-spacing:-.03em;margin:0 0 26px;max-width:17ch}
+.authors{font-size:1.1rem;font-weight:500;margin:0 0 4px}
 .authors span{white-space:nowrap}
-.affil{color:var(--muted);margin:0 0 28px;font-size:.95rem}
-.links{display:flex;flex-wrap:wrap;gap:10px;margin:0}
-.btn{display:inline-block;padding:10px 18px;border-radius:6px;border:1px solid var(--accent);color:var(--accent);text-decoration:none;font-weight:600;font-size:.95rem;background:transparent;cursor:pointer;font-family:inherit}
-.btn.primary{background:var(--accent);color:var(--accent-ink)}
-section{padding:48px 0;border-bottom:1px solid var(--line)}
-h2{font:600 1.7rem/1.25 var(--serif);margin:0 0 16px}
-h3{font:600 1.05rem/1.4 var(--sans);margin:0 0 4px}
-p{margin:0 0 14px;max-width:68ch}
-.muted{color:var(--muted)}
-.steps{list-style:none;counter-reset:s;margin:22px 0 0;padding:0;display:grid;gap:0;border-left:2px solid var(--accent)}
-.steps li{counter-increment:s;padding:2px 0 18px 22px;position:relative}
-.steps li::before{content:counter(s);position:absolute;left:-13px;top:2px;width:24px;height:24px;border-radius:50%;background:var(--accent);color:var(--accent-ink);font:600 .8rem/24px var(--sans);text-align:center}
-.steps p{margin:0;color:var(--muted)}
-.lab{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:24px;margin-top:22px}
-.seg{display:inline-flex;border:1px solid var(--accent);border-radius:6px;overflow:hidden;margin:8px 0 20px}
-.seg button{font:600 .95rem var(--sans);padding:9px 18px;border:0;background:transparent;color:var(--accent);cursor:pointer}
-.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
-.meter{display:grid;grid-template-columns:110px 1fr 56px;align-items:center;gap:12px;margin:10px 0}
-.track{height:14px;background:var(--bar);border-radius:3px;overflow:hidden}
-.fill{height:100%;background:var(--accent);width:0;transition:width .35s ease}
-.meter b{font-variant-numeric:tabular-nums;text-align:right}
-.note{font-size:.88rem;color:var(--muted);margin:14px 0 0}
-.scroll{overflow-x:auto;margin:18px 0 6px;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
-table{border-collapse:collapse;width:100%;min-width:560px;font-size:.93rem;font-variant-numeric:tabular-nums}
-th,td{padding:10px 14px;text-align:right;border-bottom:1px solid var(--line)}
-th:first-child,td:first-child{text-align:left}
-th{font-weight:600;background:var(--bg)}
-tr:last-child td{border-bottom:0}
-tr.ours td{font-weight:600;background:color-mix(in srgb,var(--accent) 12%,var(--surface))}
-.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:22px 28px;margin-top:20px}
-.facts div{border-top:2px solid var(--ink);padding-top:8px}
-.facts p{margin:0;color:var(--muted);font-size:.95rem}
-pre{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px;overflow-x:auto;font:.85rem/1.55 ui-monospace,Menlo,Consolas,monospace;margin:14px 0 10px}
-figure{margin:26px 0 8px}
-figure.tall{max-width:720px;margin-left:auto;margin-right:auto}
-.zoom{display:block;width:100%;padding:0;border:1px solid var(--line);border-radius:8px;background:#fff;cursor:zoom-in;overflow:hidden}
+.affil{color:var(--muted);margin:0 0 30px}
+.links{display:flex;flex-wrap:wrap;gap:12px;margin:0 0 44px}
+.btn{display:inline-block;padding:12px 22px;border-radius:999px;border:2px solid var(--brand);color:var(--brand);background:#fff;text-decoration:none;font:600 .98rem var(--body);cursor:pointer}
+.btn:hover{background:var(--tint)}
+.btn.primary{background:var(--brand);color:#fff}
+.btn.primary:hover{background:var(--brand-dark);border-color:var(--brand-dark)}
+.scripts{display:grid;grid-template-columns:repeat(3,1fr);background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.scripts div{padding:22px 24px;border-left:1px solid var(--line)}
+.scripts div:first-child{border-left:0}
+.scripts p{margin:0;font:600 1.5rem/1.35 var(--head);animation:focus 1.5s ease-out both}
+.scripts div:nth-child(2) p{animation-delay:.25s}
+.scripts div:nth-child(3) p{animation-delay:.5s}
+.scripts .gu{font-family:"Noto Sans Gurmukhi",var(--head)}
+.scripts .hi{font-family:"Noto Sans Devanagari",var(--head)}
+.scripts small{display:block;color:var(--muted);font-size:.88rem;margin-top:4px}
+@keyframes focus{from{filter:blur(7px);opacity:.35}to{filter:blur(0);opacity:1}}
+
+/* sections */
+section{padding:72px 0}
+section.alt{background:var(--soft)}
+h2{font:800 clamp(1.7rem,3.4vw,2.35rem)/1.15 var(--head);letter-spacing:-.02em;margin:0 0 18px}
+h3{font:700 1.08rem/1.35 var(--head);margin:0 0 4px}
+p{margin:0 0 16px;max-width:66ch}
+.lead{font-size:1.15rem;color:var(--muted)}
+
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:18px;margin-top:34px}
+.stat{background:#fff;border:1px solid var(--line);border-radius:14px;padding:20px 22px;border-top:4px solid var(--brand)}
+.stat strong{display:block;font:800 2rem/1.1 var(--head);color:var(--brand);letter-spacing:-.02em}
+.stat span{color:var(--muted);font-size:.95rem}
+
+/* architecture */
+.arch{display:grid;grid-template-columns:1.15fr .85fr;gap:40px;align-items:start;margin-top:30px}
+figure{margin:0}
+.zoom{display:block;width:100%;padding:0;border:1px solid var(--line);border-radius:14px;background:#fff;cursor:zoom-in;overflow:hidden;box-shadow:0 10px 30px -18px rgba(20,33,61,.35)}
 .zoom img{display:block;width:100%;height:auto}
-figcaption{font-size:.9rem;color:var(--muted);margin-top:10px;max-width:68ch}
+figcaption{font-size:.92rem;color:var(--muted);margin-top:12px}
 figcaption b{color:var(--ink)}
-.hint{opacity:.8}
+.steps{list-style:none;counter-reset:s;margin:0;padding:0}
+.steps li{counter-increment:s;position:relative;padding:0 0 22px 52px}
+.steps li::before{content:counter(s);position:absolute;left:0;top:0;width:36px;height:36px;border-radius:50%;background:var(--brand);color:#fff;font:700 1rem/36px var(--head);text-align:center}
+.steps li::after{content:"";position:absolute;left:17px;top:40px;bottom:4px;width:2px;background:var(--line)}
+.steps li:last-child::after{display:none}
+.steps p{margin:0;color:var(--muted);font-size:1rem}
+
+/* results */
+.scroll{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:#fff;margin-top:26px}
+table{border-collapse:collapse;width:100%;min-width:560px;font-variant-numeric:tabular-nums}
+th,td{padding:14px 18px;text-align:right;border-bottom:1px solid var(--line)}
+th:first-child,td:first-child{text-align:left}
+th{background:var(--soft);font:700 .95rem var(--head)}
+tr:last-child td{border-bottom:0}
+tr.ours td{background:var(--tint);font-weight:600;color:var(--brand-dark)}
+h3.sub{font-size:1.3rem;margin:44px 0 10px}
+h3.sub:first-of-type{margin-top:30px}
+.note{font-size:.92rem;color:var(--muted);margin:14px 0 0}
+
+pre{background:#fff;border:1px solid var(--line);border-left:4px solid var(--brand);border-radius:10px;padding:18px;overflow-x:auto;font:.86rem/1.6 ui-monospace,Menlo,Consolas,monospace;margin:20px 0 14px}
+footer{background:var(--ink);color:#c8d2e6;padding:36px 0 44px;font-size:.95rem}
+footer p{margin:0 0 6px;max-width:none}
+footer a{color:#fff}
+
 dialog{border:0;padding:0;background:transparent;max-width:96vw;max-height:96vh;overflow:visible}
-dialog::backdrop{background:rgba(0,0,0,.82)}
-dialog img{display:block;max-width:96vw;max-height:94vh;background:#fff;border-radius:6px;cursor:zoom-out}
-pre{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px;overflow-x:auto;font:.85rem/1.55 ui-monospace,Menlo,Consolas,monospace;margin:14px 0 10px}
-footer{padding:36px 0 56px;color:var(--muted);font-size:.9rem}
-@media (max-width:520px){.meter{grid-template-columns:84px 1fr 48px}.lab{padding:16px}}
-@media (prefers-reduced-motion:reduce){.fill{transition:none}}
+dialog::backdrop{background:rgba(20,33,61,.8)}
+dialog img{display:block;max-width:96vw;max-height:94vh;background:#fff;border-radius:8px;cursor:zoom-out}
+
+@media (max-width:900px){.arch{grid-template-columns:1fr;gap:30px}}
+@media (max-width:640px){
+  body{font-size:17px}.hero{padding:48px 0 40px}section{padding:52px 0}
+  .scripts{grid-template-columns:1fr}.scripts div{border-left:0;border-top:1px solid var(--line)}.scripts div:first-child{border-top:0}
+}
+@media (prefers-reduced-motion:reduce){.scripts p{animation:none}html{scroll-behavior:auto}}
 </style>
 </head>
 <body>
-<div class="wrap">
 
-<header class="hero">
+<div class="bar"><div class="wrap">
+  <b>Reading Beyond OCR Noise</b>
+  <nav aria-label="Sections"><a href="#abstract">Abstract</a><a href="#architecture">Architecture</a><a href="#results">Results</a><a href="#ablations">Ablations</a><a href="#cite">Cite</a></nav>
+</div></div>
+
+<header class="hero"><div class="wrap">
   <h1>Reading Beyond OCR Noise: Robust Cross-Lingual RAG for Legislative Archives</h1>
   <p class="authors"><span>Radha Krishna Deshpande</span>, <span>Ajoy Mondal</span>, <span>Akash Manna</span>, <span>C V Jawahar</span></p>
   <p class="affil">CVIT, International Institute of Information Technology, Hyderabad, India</p>
@@ -84,94 +124,87 @@ footer{padding:36px 0 56px;color:var(--muted);font-size:.9rem}
     <a class="btn" href="https://github.com/YOUR-ORG/YOUR-REPO">Get the code</a>
     <a class="btn" href="#cite">Cite</a>
   </p>
-</header>
-
-
-<section id="abstract">
-  <h2>Abstract</h2>
-  <p>Decades of Indian parliamentary records survive only as degraded, multi-column scans that mix Hindi, Punjabi and English. On these pages, OCR failure is the main obstacle to finding information.</p>
-  <p>We present an end-to-end framework that pairs vision-based layout segmentation and multi-script OCR with an agentic retrieval-augmented generation (RAG) pipeline. An iterative loop checks the retrieved evidence, rewrites the query when it falls short, and searches again before answering. On the 200,000-page Punjab Vidhan Sabha archive, the system outperforms standard text-only baselines.</p>
-  <div class="facts">
-    <div><h3>200,000 pages</h3><p>Punjab Vidhan Sabha proceedings, 1950–2024</p></div>
-    <div><h3>3 scripts</h3><p>Devanagari, Gurmukhi and Latin, often on the same page</p></div>
-    <div><h3>1 GPU</h3><p>Open-weight models on a single RTX 4060 (16 GB)</p></div>
+  <div class="scripts" aria-label="One archive, three scripts">
+    <div><p class="gu" lang="pa">ਪੰਜਾਬ ਵਿਧਾਨ ਸਭਾ</p><small>Punjabi, Gurmukhi script</small></div>
+    <div><p class="hi" lang="hi">पंजाब विधान सभा</p><small>Hindi, Devanagari script</small></div>
+    <div><p lang="en">Punjab Vidhan Sabha</p><small>English, Latin script</small></div>
   </div>
-</section>
+</div></header>
 
-<section id="method">
-  <h2>Pipeline</h2>
-  <p>Queries are embedded in their own language, so Punjabi questions can retrieve English pages without translation. Answers come back in the language of the question.</p>
-  <ol class="steps">
-    <li><h3>Read the page images</h3><p>A fine-tuned YOLO layout model splits multi-column pages into regions. A CRNN recognizer reads each region.</p></li>
-    <li><h3>Index with multilingual embeddings</h3><p>BAAI/bge-m3 embeds the text chunks and metadata into a ChromaDB vector store.</p></li>
-    <li><h3>Retrieve and check</h3><p>The top-5 chunks come back by cosine similarity. An evaluation LLM decides whether they are enough to answer the question.</p></li>
-    <li><h3>Rewrite and retry</h3><p>If not, a rewriting LLM rephrases terms that OCR errors may have hidden, keeping the original intent, and retrieval runs again.</p></li>
-    <li><h3>Answer from evidence</h3><p>A generation LLM answers in the user’s language, grounded in the validated pages.</p></li>
-  </ol>
-  <figure class=""><button class="zoom" type="button" aria-label="Enlarge figure 1"><img src="assets/fig1.jpg" alt="Architecture diagram: query management, offline embedding into a vector database, an agent loop of retrieve, evaluate sufficiency and rewrite, and grounded response generation." loading="lazy"></button><figcaption><b>Figure 1.</b> Architecture of the agentic RAG system: multilingual query processing, an iterative LLM-driven loop that checks whether the context is sufficient, and grounded response generation. <span class="hint">Click to enlarge.</span></figcaption></figure>
-</section>
+<section id="abstract"><div class="wrap">
+  <h2>Abstract</h2>
+  <p class="lead">Decades of Indian parliamentary records survive only as degraded, multi-column scans that mix Hindi, Punjabi and English. On these pages, OCR failure is the main obstacle to finding information.</p>
+  <p>We present an end-to-end framework that pairs vision-based layout segmentation and multi-script OCR with an agentic retrieval-augmented generation (RAG) pipeline. An iterative loop checks the retrieved evidence, rewrites the query when it falls short, and searches again before answering. On the 200,000-page Punjab Vidhan Sabha archive, the system outperforms standard text-only baselines.</p>
+  <div class="stats">
+    <div class="stat"><strong>200,000</strong><span>pages, 1950–2024</span></div>
+    <div class="stat"><strong>3 scripts</strong><span>often on one page</span></div>
+    <div class="stat"><strong>1 GPU</strong><span>open-weight models, RTX 4060</span></div>
+    <div class="stat"><strong>0.810</strong><span>MRR@1 on 200 queries</span></div>
+  </div>
+</div></section>
 
-<section id="data">
-  <h2>The archive</h2>
-  <p>Records come from bound volumes digitized over several decades at <a href="https://pvs.neva.gov.in/">pvs.neva.gov.in</a>: proceedings, debates, starred and unstarred questions, budgets, committee reports and notices. Pages from the 1950s and 1960s show faded type, ink bleed-through and skew. Recent pages are cleaner but still dense and multi-column.</p>
-  <p>The evaluation set is stratified by decade, script and document type, so results reflect the whole archive and not only its cleaner end. It has 1,000 pages and 200 gold question–answer pairs, plus 20 hand-transcribed pages for OCR ground truth.</p>
-  <figure class=""><button class="zoom" type="button" aria-label="Enlarge figure 2"><img src="assets/fig2.jpg" alt="Sample archive pages showing tables, multi-column layouts, mixed scripts and faded print." loading="lazy"></button><figcaption><b>Figure 2.</b> Representative pages from the archive: tabular data, mixed scripts and faded text. <span class="hint">Click to enlarge.</span></figcaption></figure>
-</section>
+<section id="architecture" class="alt"><div class="wrap">
+  <h2>Architecture</h2>
+  <p class="lead">Questions are embedded in their own language, so a Punjabi question can find an English page. Answers come back in the language of the question.</p>
+  <div class="arch">
+    <figure>
+      <button class="zoom" type="button" aria-label="Enlarge the architecture figure"><img src="assets/fig1.jpg" alt="Architecture diagram: query management, offline embedding into a vector database, an agent loop of retrieve, evaluate sufficiency and rewrite, and grounded response generation."></button>
+      <figcaption><b>Figure 1.</b> The agentic RAG system. Click to enlarge.</figcaption>
+    </figure>
+    <ol class="steps">
+      <li><h3>Read the pages</h3><p>A fine-tuned YOLO layout model splits each scan into regions and a CRNN recognizer reads them.</p></li>
+      <li><h3>Index</h3><p>BAAI/bge-m3 embeds the text and metadata into a ChromaDB vector store.</p></li>
+      <li><h3>Retrieve and check</h3><p>The top-5 chunks come back by cosine similarity. An LLM judges whether they are enough.</p></li>
+      <li><h3>Rewrite and retry</h3><p>If not, the query is rephrased around terms that OCR errors may have hidden, then retrieval runs again.</p></li>
+      <li><h3>Answer from evidence</h3><p>A generation LLM answers in the user’s language, grounded in the validated pages.</p></li>
+    </ol>
+  </div>
+</div></section>
 
-
-
-<section id="results">
+<section id="results"><div class="wrap">
   <h2>Results</h2>
-  <p>Retrieval on 1,000 stratified pages and 200 gold questions, indexed against the full 200,000-page archive. The optimized pipeline leads on every metric.</p>
+  <p class="lead">On 1,000 stratified pages and 200 gold questions, indexed against the full archive, the optimized pipeline leads on every retrieval metric.</p>
   <div class="scroll"><table>
     <thead><tr><th>Model / pipeline</th><th>MRR@1</th><th>Hit@3</th><th>Hit@5</th><th>Prec@3</th></tr></thead>
     <tbody>
-      <tr><td>MuRIL</td><td>0.000</td><td>0.005</td><td>0.015</td><td>0.002</td></tr>
       <tr><td>LaBSE</td><td>0.320</td><td>0.510</td><td>0.590</td><td>0.170</td></tr>
-      <tr><td>Embedding-gemma (300M)</td><td>0.525</td><td>0.735</td><td>0.775</td><td>0.245</td></tr>
-      <tr><td>NetraEmbed (dim 768)</td><td>0.580</td><td>0.816</td><td>0.890</td><td>0.272</td></tr>
-      <tr><td>NetraEmbed (dim 1536)</td><td>0.598</td><td>0.835</td><td>0.905</td><td>0.278</td></tr>
       <tr><td>NetraEmbed (dim 2560)</td><td>0.605</td><td>0.843</td><td>0.912</td><td>0.281</td></tr>
       <tr><td>Multilingual-E5-Large</td><td>0.620</td><td>0.855</td><td>0.915</td><td>0.285</td></tr>
       <tr><td>Standard BGE-M3</td><td>0.775</td><td>0.900</td><td>0.940</td><td>0.300</td></tr>
       <tr class="ours"><td>Ours (optimized pipeline)</td><td>0.810</td><td>0.925</td><td>0.955</td><td>0.325</td></tr>
     </tbody></table></div>
-  <figure class=""><button class="zoom" type="button" aria-label="Enlarge figure 3"><img src="assets/fig3.jpg" alt="A Punjabi question, the retrieved scanned page, the Punjabi answer and its English translation." loading="lazy"></button><figcaption><b>Figure 3.</b> End-to-end example. A Punjabi question retrieves the right scanned page, and the system answers in Punjabi, with an English translation for reference. <span class="hint">Click to enlarge.</span></figcaption></figure>
-  <figure class="tall"><button class="zoom" type="button" aria-label="Enlarge figure 4"><img src="assets/fig4.jpg" alt="Rows comparing pages retrieved by five embedding models and the proposed system against the ground-truth page for one Punjabi query." loading="lazy"></button><figcaption><b>Figure 4.</b> The same Punjabi query run through multilingual-e5-large, BGE-M3, LaBSE, NetraEmbed (2560) and EmbeddingGemma-300M. Several models return unrelated records. Our system retrieves the page that holds the answer. <span class="hint">Click to enlarge.</span></figcaption></figure>
-</section>
-<section id="ablations">
+  <p class="note">Selected baselines shown. The paper compares more embedding models.</p>
+</div></section>
+
+<section id="ablations" class="alt"><div class="wrap">
   <h2>Ablations</h2>
+  <p class="lead">What each part of the system contributes, measured on the same 200-query benchmark and the 20 hand-transcribed pages.</p>
 
-  <h3 style="margin-top:24px;font-size:1.2rem">Agent loop iterations</h3>
-  <p>Allowing more retrieve–rewrite rounds helps answer quality far more than ranking. Choose the maximum number of loops L to compare.</p>
-  <div class="lab">
-    <div class="seg" role="group" aria-label="Maximum agent loops">
-      <button type="button" aria-pressed="true" data-l="0">L = 1 (no rewriting)</button>
-      <button type="button" aria-pressed="false" data-l="1">L = 2</button>
-      <button type="button" aria-pressed="false" data-l="2">L = 3</button>
-    </div>
-    <div class="meter"><span>MRR@1</span><div class="track"><div class="fill" id="f0"></div></div><b id="v0"></b></div>
-    <div class="meter"><span>Precision@3</span><div class="track"><div class="fill" id="f1"></div></div><b id="v1"></b></div>
-    <div class="meter"><span>Answer F1</span><div class="track"><div class="fill" id="f2"></div></div><b id="v2"></b></div>
-    <p class="note">Approximate values read from Fig. 6 of the paper (200-query benchmark). Answer F1 rises from about 0.18 to 0.35, nearly a 2× gain, while MRR@1 moves from about 0.89 to 0.97.</p>
-  </div>
-  <figure class=""><button class="zoom" type="button" aria-label="Enlarge figure 6"><img src="assets/fig6.jpg" alt="Line chart of MRR@1, Precision@3 and Answer F1 for 1, 2 and 3 maximum agent loops." loading="lazy"></button><figcaption><b>Figure 6.</b> Metrics as the maximum number of agent loops grows. <span class="hint">Click to enlarge.</span></figcaption></figure>
-  <figure class="tall"><button class="zoom" type="button" aria-label="Enlarge figure 5"><img src="assets/fig5.jpg" alt="Three iterations of query rewriting; the first two retrieve irrelevant pages and the third retrieves the correct table." loading="lazy"></button><figcaption><b>Figure 5.</b> Query rewriting corrects retrieval. The first two iterations return irrelevant pages, and the third finds the right one. Here the query is in Punjabi and the page is in English. <span class="hint">Click to enlarge.</span></figcaption></figure>
-
-  <h3 style="margin-top:40px;font-size:1.2rem">Layout and OCR quality</h3>
-  <p>On 20 hand-transcribed pages, the layout model matters a lot: with the same recognizer, fine-tuned YOLO lifts word accuracy from 60.35% to 80.03% over CRAFT. Larger OCR systems score higher, but our pipeline stays fully local.</p>
+  <h3 class="sub">Agent loop iterations</h3>
+  <p>L is the maximum number of retrieve–rewrite rounds. L = 1 is single-pass retrieval with no query rewriting. Answer F1 nearly doubles, so the loop mostly recovers context that one pass misses entirely.</p>
   <div class="scroll"><table>
-    <thead><tr><th>Layout + OCR</th><th>CRR (%)</th><th>WRR (%)</th></tr></thead>
+    <thead><tr><th>Max loops (L)</th><th>MRR@1</th><th>Precision@3</th><th>Answer F1</th></tr></thead>
     <tbody>
-      <tr><td>Gemini-3.1</td><td>99.7</td><td>89.6</td></tr>
-      <tr><td>Surya2</td><td>99.6</td><td>88.9</td></tr>
-      <tr><td>Sarvam</td><td>99.5</td><td>89.4</td></tr>
-      <tr class="ours"><td>YOLO (fine-tuned) + CRNN (ours)</td><td>95.67</td><td>80.03</td></tr>
-      <tr><td>CRAFT + CRNN (ours)</td><td>89.00</td><td>60.35</td></tr>
+      <tr><td>1 (no rewriting)</td><td>0.89</td><td>0.33</td><td>0.18</td></tr>
+      <tr><td>2</td><td>0.93</td><td>0.35</td><td>0.26</td></tr>
+      <tr class="ours"><td>3</td><td>0.97</td><td>0.37</td><td>0.35</td></tr>
+    </tbody></table></div>
+  <p class="note">Values read from the paper’s Fig. 6 and rounded. The text states only the L = 1 and L = 3 values.</p>
+
+  <h3 class="sub">Layout and OCR quality</h3>
+  <p>With the same CRNN recognizer, the fine-tuned YOLO layout model lifts word accuracy from 60.35% to 80.03% over CRAFT. Larger OCR systems score higher, but our pipeline stays fully local.</p>
+  <div class="scroll"><table>
+    <thead><tr><th>Layout model</th><th>OCR model</th><th>CRR (%)</th><th>WRR (%)</th></tr></thead>
+    <tbody>
+      <tr><td>Gemini-3.1</td><td>Gemini-3.1</td><td>99.7</td><td>89.6</td></tr>
+      <tr><td>Surya2</td><td>Surya2</td><td>99.6</td><td>88.9</td></tr>
+      <tr><td>Sarvam</td><td>Sarvam</td><td>99.5</td><td>89.4</td></tr>
+      <tr class="ours"><td>YOLO (fine-tuned)</td><td>CRNN (ours)</td><td>95.67</td><td>80.03</td></tr>
+      <tr><td>CRAFT</td><td>CRNN (ours)</td><td>89.00</td><td>60.35</td></tr>
     </tbody></table></div>
 
-  <h3 style="margin-top:40px;font-size:1.2rem">OCR choice and retrieval</h3>
-  <p>Swapping in stronger OCR changes retrieval only slightly: MRR@1 moves between 0.810 and 0.825 across all four systems.</p>
+  <h3 class="sub">OCR choice and retrieval</h3>
+  <p>Swapping in stronger OCR changes retrieval only slightly: MRR@1 stays between 0.810 and 0.825 across all four systems.</p>
   <div class="scroll"><table>
     <thead><tr><th>OCR model</th><th>MRR@1</th><th>Hit@3</th><th>Hit@5</th><th>Prec@3</th></tr></thead>
     <tbody>
@@ -181,24 +214,18 @@ footer{padding:36px 0 56px;color:var(--muted);font-size:.9rem}
       <tr class="ours"><td>Ours</td><td>0.810</td><td>0.925</td><td>0.955</td><td>0.325</td></tr>
     </tbody></table></div>
 
-  <h3 style="margin-top:40px;font-size:1.2rem">Language model on OCR-noisy text</h3>
-  <p>Average perplexity of three instruction-tuned backbones on the multi-script archive documents.</p>
+  <h3 class="sub">Language model on OCR-noisy text</h3>
+  <p>Average perplexity of three instruction-tuned backbones on the multi-script archive documents. Lower is better.</p>
   <div class="scroll"><table>
-    <thead><tr><th>Language model</th><th>Average perplexity (lower is better)</th></tr></thead>
+    <thead><tr><th>Language model</th><th>Average perplexity</th></tr></thead>
     <tbody>
       <tr><td>Mistral-7B</td><td>7.81</td></tr>
       <tr><td>Phi-3</td><td>4.99</td></tr>
       <tr class="ours"><td>Qwen2.5</td><td>4.46</td></tr>
     </tbody></table></div>
-  <figure class=""><button class="zoom" type="button" aria-label="Enlarge figure 7"><img src="assets/fig7.jpg" alt="Bar chart of average perplexity: Mistral-7B 7.81, Phi-3 4.99, Qwen2.5 4.46." loading="lazy"></button><figcaption><b>Figure 7.</b> Average perplexity on multi-script archive documents. Qwen2.5 is lowest (4.46), then Phi-3 (4.99) and Mistral-7B (7.81). <span class="hint">Click to enlarge.</span></figcaption></figure>
-</section>
+</div></section>
 
-<section id="limits">
-  <h2>Limitations</h2>
-  <p>Severe OCR errors can still affect dense retrieval and entity matching. The agent loop and LLM sufficiency checks add latency compared with single-pass retrieval. Complex financial tables can lose their hierarchy when converted to text chunks. Future work targets OCR robustness, lower latency and table structure.</p>
-</section>
-
-<section id="cite">
+<section id="cite"><div class="wrap">
   <h2>Cite this work</h2>
 <pre id="bib">@inproceedings{deshpande2026reading,
   title     = {Reading Beyond {OCR} Noise: Robust Cross-Lingual {RAG} for Legislative Archives},
@@ -206,34 +233,17 @@ footer{padding:36px 0 56px;color:var(--muted);font-size:.9rem}
   booktitle = {REPLACE_WITH_VENUE},
   year      = {2026}
 }</pre>
-  <button class="btn" id="copy" type="button">Copy BibTeX</button>
-</section>
+  <button class="btn primary" id="copy" type="button">Copy BibTeX</button>
+</div></section>
 
-
-
-
-
-<footer>
+<footer><div class="wrap">
   <p>Supported by MeitY, Government of India, through the NLTM-Bhashini project.</p>
   <p>Contact: radhakrishna.d@research.iiit.ac.in · ajoy.mondal@iiit.ac.in · jawahar@iiit.ac.in</p>
-</footer>
-</div>
+</div></footer>
 
 <dialog id="lb" aria-label="Enlarged figure"><img alt=""></dialog>
 <script>
 (function(){
-  var data=[[0.89,0.33,0.18],[0.93,0.35,0.26],[0.97,0.37,0.35]];
-  var max=[1,0.5,0.5];
-  var btns=document.querySelectorAll('.seg button');
-  function show(i){
-    btns.forEach(function(b,j){b.setAttribute('aria-pressed',j===i?'true':'false');});
-    for(var k=0;k<3;k++){
-      document.getElementById('f'+k).style.width=(data[i][k]/max[k]*100)+'%';
-      document.getElementById('v'+k).textContent=data[i][k].toFixed(2);
-    }
-  }
-  btns.forEach(function(b){b.addEventListener('click',function(){show(+b.dataset.l);});});
-  show(0);
   var lb=document.getElementById('lb'),lbi=lb.querySelector('img');
   document.querySelectorAll('.zoom').forEach(function(b){b.addEventListener('click',function(){
     var i=b.querySelector('img');lbi.src=i.src;lbi.alt=i.alt;lb.showModal();});});
@@ -241,9 +251,8 @@ footer{padding:36px 0 56px;color:var(--muted);font-size:.9rem}
   var copy=document.getElementById('copy');
   copy.addEventListener('click',function(){
     var t=document.getElementById('bib').textContent;
-    try{
-      navigator.clipboard.writeText(t).then(function(){copy.textContent='Copied';setTimeout(function(){copy.textContent='Copy BibTeX';},1600);});
-    }catch(e){copy.textContent='Select the text and copy';}
+    try{navigator.clipboard.writeText(t).then(function(){copy.textContent='Copied';setTimeout(function(){copy.textContent='Copy BibTeX';},1600);});}
+    catch(e){copy.textContent='Select the text and copy';}
   });
 })();
 </script>
