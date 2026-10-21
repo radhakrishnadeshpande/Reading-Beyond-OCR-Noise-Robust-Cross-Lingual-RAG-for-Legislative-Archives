@@ -83,37 +83,6 @@ Increasing the maximum number of retrieval–rewrite iterations from 1 to 3 rais
 | Evaluation set | 1,000 pages and 200 gold question–answer pairs, stratified by decade, script and document type |
 | OCR ground truth | 20 hand-transcribed pages across degradation levels |
 
-## Quick start
-
-> Replace these commands with the ones in your repository.
-
-```bash
-git clone https://github.com/YOUR-ORG/YOUR-REPO.git
-cd YOUR-REPO
-pip install -r requirements.txt
-
-# 1. Layout + OCR
-python scripts/run_ocr.py --input data/pages --output data/text
-
-# 2. Build the index (BAAI/bge-m3 + ChromaDB)
-python scripts/build_index.py --text data/text --db chroma_db
-
-# 3. Ask a question (Hindi / Punjabi / English)
-python scripts/ask.py --db chroma_db --max_loops 3 --query "<your question>"
-```
-
-## Repository structure
-
-> Adjust to match your repository.
-
-```
-.
-├── assets/          # figures used in this README and the project page
-├── scripts/         # OCR, indexing, query entry points
-├── src/             # layout, OCR, retrieval, agent loop
-├── eval/            # MRR / Hit@k / F1 / CRR / WRR evaluation
-└── index.html       # project page (GitHub Pages)
-```
 
 ## Limitations
 
@@ -121,16 +90,7 @@ python scripts/ask.py --db chroma_db --max_loops 3 --query "<your question>"
 - The agent loop and LLM-based sufficiency checks add inference latency over standard retrieval.
 - Complex financial and unstructured tables can lose hierarchical structure when converted to text chunks.
 
-## Citation
 
-```bibtex
-@inproceedings{deshpande2026reading,
-  title     = {Reading Beyond {OCR} Noise: Robust Cross-Lingual {RAG} for Legislative Archives},
-  author    = {Deshpande, Radha Krishna and Mondal, Ajoy and Manna, Akash and Jawahar, C V},
-  booktitle = {REPLACE_WITH_VENUE},
-  year      = {2026}
-}
-```
 
 ## Acknowledgment
 
