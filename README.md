@@ -15,7 +15,7 @@ This project couples **layout-aware multi-script OCR** with an **agentic retriev
 
 We evaluate on the **Punjab Vidhan Sabha (PVS) archive**: about 200,000 pages spanning 1950–2024.
 
-![Pipeline overview](ws/adapt_dr/Reading-Beyond-OCR-Noise-Robust-Cross-Lingual-RAG-for-Legislative-Archives/agentic_rag.png)
+![Pipeline overview](assets/pipeline.png)
 
 ## Highlights
 
@@ -89,7 +89,6 @@ Increasing the maximum number of retrieval–rewrite iterations from 1 to 3 rais
 - Severe OCR errors on degraded pages can still hurt dense retrieval and entity matching.
 - The agent loop and LLM-based sufficiency checks add inference latency over standard retrieval.
 - Complex financial and unstructured tables can lose hierarchical structure when converted to text chunks.
-
 
 
 ## Acknowledgment
